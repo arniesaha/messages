@@ -19,6 +19,8 @@ package com.google.android.gms.nearby.messages.samples.nearbydevices;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
@@ -31,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String MAIN_FRAGMENT_TAG = "main_fragment_tag";
 
     private MainFragment mMainFragment;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,4 +69,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+
 }

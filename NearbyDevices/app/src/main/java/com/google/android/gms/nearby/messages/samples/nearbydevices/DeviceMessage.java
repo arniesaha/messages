@@ -1,10 +1,15 @@
 package com.google.android.gms.nearby.messages.samples.nearbydevices;
 
+import android.content.Context;
+import android.content.ContextWrapper;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Build;
+import android.util.Base64;
+import android.util.Log;
 
 import com.google.android.gms.nearby.messages.Message;
 import com.google.gson.Gson;
-
 import java.nio.charset.Charset;
 
 /**
@@ -13,12 +18,12 @@ import java.nio.charset.Charset;
  * InstanceID) to the Message payload, which helps Nearby distinguish between multiple devices with
  * the same model name.
  */
-public class DeviceMessage {
-    private static final Gson gson = new Gson();
+public class DeviceMessage{
 
-    private final String mInstanceId;
-    private final String mMessageBody;
-    private final String mUserProfile;
+    private static final Gson gson = new Gson();
+    private String mInstanceId;
+    private String mMessageBody;
+    private String mUserProfile;
 
     /**
      * Builds a new {@link Message} object using a unique identifier.
@@ -27,6 +32,7 @@ public class DeviceMessage {
         DeviceMessage deviceMessage = new DeviceMessage(instanceId);
         return new Message(gson.toJson(deviceMessage).toString().getBytes(Charset.forName("UTF-8")));
     }
+
 
     /**
      * Creates a {@code DeviceMessage} object from the string used to construct the payload to a
@@ -41,10 +47,14 @@ public class DeviceMessage {
 
     private DeviceMessage(String instanceId) {
         this.mInstanceId = instanceId;
-        this.mMessageBody = Build.ID;
+        this.mMessageBody = "Cutting Chai "+Build.MODEL;
         this.mUserProfile = "Profile Data";
+
+
         // TODO(developer): add other fields that must be included in the Nearby Message payload.
     }
+
+
 
     protected String getMessageBody() {
         return mMessageBody;

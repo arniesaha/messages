@@ -19,16 +19,21 @@ package com.google.android.gms.nearby.messages.samples.nearbydevices;
 import android.content.Context;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.os.Handler;
 import android.text.TextUtils;
+import android.util.Base64;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
@@ -148,6 +153,7 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
         // Use a retained fragment to avoid re-publishing or re-subscribing upon orientation
         // changes.
         setRetainInstance(true);
+
     }
 
     @Override
@@ -188,12 +194,21 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
             }
         });
 
+        final ImageView imgPayloadView;
+        imagePayload imgPayload = new imagePayload();
+        String b64 = imgPayload.getBitmap(getActivity().getApplicationContext());
+        Log.d("b64", b64);
+        byte[] decodedString = Base64.decode(b64, Base64.DEFAULT);
+        final Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+        imgPayloadView = (ImageView) view.findViewById(R.id.imageView);
+
         final ListView nearbyDevicesListView = (ListView) view.findViewById(
                 R.id.nearby_devices_list_view);
         mNearbyDevicesArrayAdapter = new ArrayAdapter<>(getActivity().getApplicationContext(),
                 android.R.layout.simple_list_item_1,
                 mNearbyDevicesArrayList);
         nearbyDevicesListView.setAdapter(mNearbyDevicesArrayAdapter);
+
 
         mMessageListener = new MessageListener() {
             @Override
@@ -204,6 +219,8 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
                         Log.d("User Profile Callback", DeviceMessage.fromNearbyMessage(message).getUserProfile());
                         mNearbyDevicesArrayAdapter.add(
                                 DeviceMessage.fromNearbyMessage(message).getMessageBody());
+                        imgPayloadView.setImageBitmap(decodedByte);
+
                     }
                 });
             }
@@ -216,6 +233,7 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
                     public void run() {
                         mNearbyDevicesArrayAdapter.remove(
                                 DeviceMessage.fromNearbyMessage(message).getMessageBody());
+                        imgPayloadView.setImageResource(0);
                     }
                 });
             }
