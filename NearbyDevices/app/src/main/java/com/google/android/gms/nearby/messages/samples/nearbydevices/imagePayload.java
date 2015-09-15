@@ -1,7 +1,6 @@
 package com.google.android.gms.nearby.messages.samples.nearbydevices;
 
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
@@ -19,7 +18,7 @@ public class imagePayload{
     }
 
     public String getBitmap(Context context){
-        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.img122);
+        Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), R.drawable.download);
         String b64 = encodeTobase64(bitmap);
         return b64;
     }

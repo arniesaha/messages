@@ -102,6 +102,12 @@
         </RelativeLayout>
     </LinearLayout>
 
+    <TextView
+        android:layout_width="103dp"
+        android:layout_height="29dp"
+        android:text="Timer"
+        android:id="@+id/timerTextView" />
+
     <ListView
         android:id="@+id/nearby_devices_list_view"
         android:layout_width="match_parent"

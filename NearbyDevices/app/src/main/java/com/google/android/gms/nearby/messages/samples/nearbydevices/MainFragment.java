@@ -19,12 +19,12 @@ package com.google.android.gms.nearby.messages.samples.nearbydevices;
 import android.content.Context;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.app.Fragment;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
@@ -36,6 +36,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -97,8 +98,8 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
      * Sets the time in seconds for a published message or a subscription to live. Set to three
      * minutes.
      */
-    private static final Strategy PUB_SUB_STRATEGY = new Strategy.Builder()
-            .setTtlSeconds(Constants.TTL_IN_SECONDS).build();
+    private static final Strategy PUB_SUB_STRATEGY = new Strategy.Builder().setTtlSeconds(Constants.TTL_IN_SECONDS).build();
+
 
     // Views.
     private ProgressBar mSubscriptionProgressBar;
@@ -116,6 +117,7 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
      */
     private final ArrayList<String> mNearbyDevicesArrayList = new ArrayList<>();
 
+    private ImageView imgPayloadView;
     /**
      * Provides an entry point for Google Play services.
      */
@@ -144,6 +146,17 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
      */
     private ResetStateHandler mResetStateHandler;
 
+    /**
+     * Timer declarations. Time taken to discover an ongoing share published by another nearby device
+     */
+    private long startTime = 0L;
+    private Handler customHandler = new Handler();
+    long timeInMilliseconds = 0L;
+    long timeSwapBuff = 0L;
+    long updatedTime = 0L;
+    private TextView timerValue;
+
+
     public MainFragment() {
     }
 
@@ -162,10 +175,14 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
         View view = inflater.inflate(R.layout.fragment_main, container, false);
         mSubscriptionProgressBar = (ProgressBar) view.findViewById(
                 R.id.subscription_progress_bar);
+        timerValue = (TextView) view.findViewById(R.id.timerTextView);
+
         mSubscriptionImageButton = (ImageButton) view.findViewById(R.id.subscription_image_button);
         mSubscriptionImageButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+
                 String subscriptionTask = getPubSubTask(Constants.KEY_SUBSCRIPTION_TASK);
                 if (TextUtils.equals(subscriptionTask, Constants.TASK_NONE) ||
                         TextUtils.equals(subscriptionTask, Constants.TASK_UNSUBSCRIBE)) {
@@ -175,6 +192,9 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
                     updateSharedPreference(Constants.KEY_SUBSCRIPTION_TASK,
                             Constants.TASK_UNSUBSCRIBE);
                 }
+
+                startTime = SystemClock.uptimeMillis();
+                customHandler.postDelayed(updateTimerThread, 0);
             }
         });
 
@@ -194,12 +214,6 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
             }
         });
 
-        final ImageView imgPayloadView;
-        imagePayload imgPayload = new imagePayload();
-        String b64 = imgPayload.getBitmap(getActivity().getApplicationContext());
-        Log.d("b64", b64);
-        byte[] decodedString = Base64.decode(b64, Base64.DEFAULT);
-        final Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
         imgPayloadView = (ImageView) view.findViewById(R.id.imageView);
 
         final ListView nearbyDevicesListView = (ListView) view.findViewById(
@@ -213,12 +227,27 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
         mMessageListener = new MessageListener() {
             @Override
             public void onFound(final Message message) {
+                startTime = 0L;
+                timeSwapBuff += timeInMilliseconds;
+
+                customHandler.removeCallbacks(updateTimerThread);
+
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        Log.d("User Profile Callback", DeviceMessage.fromNearbyMessage(message).getUserProfile());
+                        Log.d("Profile Random Data", String.valueOf(DeviceMessage.fromNearbyMessage(message).getUserProfile().getBytes().length));
+                        Log.d("Message Body", String.valueOf(DeviceMessage.fromNearbyMessage(message).getMessageBody().getBytes().length));
+                        Log.d("Image Payload Size", String.valueOf(DeviceMessage.fromNearbyMessage(message).getBitmap().getBytes().length));
+                        int payloadSize = DeviceMessage.fromNearbyMessage(message).getUserProfile().getBytes().length+DeviceMessage.fromNearbyMessage(message).getMessageBody().getBytes().length+DeviceMessage.fromNearbyMessage(message).getBitmap().getBytes().length;
                         mNearbyDevicesArrayAdapter.add(
                                 DeviceMessage.fromNearbyMessage(message).getMessageBody());
+
+                        mNearbyDevicesArrayAdapter.add("Payload Size: "+String.valueOf(payloadSize));
+                        Log.e("Image Payload", DeviceMessage.fromNearbyMessage(message).getBitmap());
+
+                        String b64 = DeviceMessage.fromNearbyMessage(message).getBitmap();
+                        byte[] decodedString = Base64.decode(b64, Base64.DEFAULT);
+                        Bitmap decodedByte = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
                         imgPayloadView.setImageBitmap(decodedByte);
 
                     }
@@ -233,7 +262,8 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
                     public void run() {
                         mNearbyDevicesArrayAdapter.remove(
                                 DeviceMessage.fromNearbyMessage(message).getMessageBody());
-                        imgPayloadView.setImageResource(0);
+                        imgPayloadView.setImageBitmap(null);
+                        imgPayloadView.destroyDrawingCache();
                     }
                 });
             }
@@ -256,6 +286,7 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
             @Override
             public void run() {
                 mNearbyDevicesArrayAdapter.clear();
+                imgPayloadView.setImageBitmap(null);
             }
         });
     }
@@ -641,4 +672,29 @@ public class MainFragment extends Fragment implements GoogleApiClient.Connection
             }
         }
     }
+
+
+    private Runnable updateTimerThread = new Runnable() {
+        public void run() {
+
+            timeInMilliseconds = SystemClock.uptimeMillis() - startTime;
+            updatedTime = timeSwapBuff + timeInMilliseconds;
+            int secs = (int) (updatedTime / 1000);
+            int mins = secs / 60;
+            secs = secs % 60;
+            int milliseconds = (int) (updatedTime % 1000);
+
+            timerValue.setText("" + mins + ":"
+                    + String.format("%02d", secs) + ":"
+                    + String.format("%03d", milliseconds));
+
+            customHandler.postDelayed(this, 0);
+
+
+        }
+
+
+
+    };
+
 }
